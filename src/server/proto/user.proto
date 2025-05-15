@@ -98,11 +98,17 @@ message UserUpdateRequest {
     string token = 12;
 }
 
+message UserResponse {
+    int32 code = 1;
+    string message = 2;
+    optional UserBase user = 3;
+}
+
 service UserServices {
-    rpc UserDetail (UserRequest) returns (UserBase);
+    rpc UserDetail (UserRequest) returns (UserResponse);
     rpc UserList (google.protobuf.Empty) returns (UserListResponse);
-    rpc UserSignIn (UserSignInRequest) returns (UserBase);   
-    rpc UserSignUp (UserSignUpRequest) returns (UserBase);
+    rpc UserSignIn (UserSignInRequest) returns (UserResponse);   
+    rpc UserSignUp (UserSignUpRequest) returns (UserResponse);
     rpc UserSearch (UserSearchRequest) returns (UserListResponse);
     rpc UserUpdate (UserUpdateRequest) returns (UserBase);
     rpc UserDelete (UserRequest) returns (google.protobuf.Empty);

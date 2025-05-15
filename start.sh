@@ -1,2 +1,3 @@
 
-uvicorn app:app --reload
+uvicorn app:app --reload &
+python3 server.py

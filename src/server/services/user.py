@@ -5,6 +5,8 @@ from google.protobuf.empty_pb2 import Empty
 from fastapi import Request
 import logging
 
+import grpc
+
 from src.client.models.user import UserModel
 from src.config.settings import settings
 from src.server.grpc import user_pb2, user_pb2_grpc
@@ -49,7 +51,7 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
 
                 return user_data
             
-            return context.abort(code=404, details="User not found!")
+            return context.abort(code=grpc.StatusCode.NOT_FOUND, details="User not found!")
 
         except Exception as e:
             logger.info(f"User Detail Error: {e}")
@@ -61,7 +63,7 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
             await connect_to_mongo()
 
         try:
-            collection = db_instance.db.get_collection("users")
+            collection = db_instance.db.get_collection("fa_users")
 
             user = await authenticate_user(
                 identifier=request.identifier,
@@ -110,17 +112,17 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
                 )
 
                 return user_data
-            return context.abort(code=400, details="Unsuccessfully Authenticated!")
+            return context.abort(code=grpc.StatusCode.NOT_FOUND, details="Unsuccessfully Authenticated!")
 
             
         except Exception as e:
             logger.error(f"Something went wrong: {e}")
-            return context.abort(code=500, details=f"Something went wrong with: {e}")
+            return context.abort(code=grpc.StatusCode.INTERNAL, details=f"Something went wrong with: {e}")
         
         
-    async def UserSignUp(self, request: user_pb2.UserSignUpRequest, params: Request, context: ServicerContext):
+    async def UserSignUp(self, request: user_pb2.UserSignUpRequest, context: ServicerContext):
         if db_instance.db is None:
-            connect_to_mongo()
+            await connect_to_mongo()
 
         try:
             query_conditions = [{"username": request.username}]
@@ -131,7 +133,7 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
             if request.phone:
                 query_conditions.append({"phone": request.phone})
 
-            collection = db_instance.db.get_collection("users")
+            collection = db_instance.db.get_collection("fa_users")
 
             existing_user = await collection.find_one({"$or": query_conditions})
 
@@ -145,8 +147,10 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
                 else:
                     msg = "User already exists."
 
-                logger.info(msg)                
-                return context.abort(code=400, details=msg)
+                return user_pb2.UserResponse(
+                    code = 1,
+                    message = msg
+                )
             
             user_doc = UserModel(
                 username=request.username,
@@ -155,39 +159,53 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
                 password=request.password,
                 firstname=request.firstname,
                 lastname=request.lastname,
+                is_verified=request.is_verified,
                 provider=request.provider,
                 url=request.url,
-                ip_address=params.client.host,
-                token=request.access_token
+                ip_address=request.ip_address,
+                token=request.token,
+                created_at=request.created_at,
+                updated_at=request.updated_at
             )
 
             new_user = await collection.insert_one(user_doc.model_dump(by_alias=True, exclude=["id"]))
 
             if not new_user.acknowledged:
-                return context.abort(code=400, details="Unfortunately, you have failed try to sign up.")
+                return user_pb2.UserResponse(
+                    code = 1,
+                    message = "Unfortunately, you have failed try to sign up."
+                )
             
-            created_user = await collection.find_one({"_id": new_user.inserted_id})
+            created_user = await collection.find_one({"_id": ObjectId(new_user.inserted_id)})
 
             serialized_user = serial_doc(created_user)
 
-            return user_pb2.UserBase(
+            user = user_pb2.UserBase(
                     id = str(serialized_user["_id"]),
                     username = serialized_user["username"],
-                    email = serialized_user["email"],
-                    phone = serialized_user["phone"],
+                    email = serialized_user.get("email", ""),
+                    phone = serialized_user.get("phone", ""),
                     ip_address = serialized_user["ip_address"],
                     url = serialized_user["url"],
                     provider = serialized_user["provider"],
                     is_verified = serialized_user["is_verified"],
-                    avatar = serialized_user["avatar"],
-                    firstname = serialized_user["firstname"],
-                    lastname = serialized_user["lastname"],
+                    avatar = serialized_user.get("avatar", ""),
+                    firstname = serialized_user.get("firstname", ""),
+                    lastname = serialized_user.get("lastname", ""),
                     created_at = serialized_user["created_at"],
                     updated_at = serialized_user["updated_at"],
                     token = serialized_user["token"]
                 )
+            
+            return user_pb2.UserResponse(
+                code = 0,
+                message = "Successfully sign up.",
+                user = user
+            )
 
 
         except Exception as e:
-            logger.error(f"Something went wrong: {e}")
-            return context.abort(code=500, details=f"Something went wrong: {e}")
+            return user_pb2.UserResponse(
+                code = 1,
+                message = f"Something went wrong: {e}"
+            )

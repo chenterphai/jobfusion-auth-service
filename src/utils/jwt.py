@@ -76,7 +76,7 @@ def get_hashed_password(password):
 # Helper Function for Get User Data
 # #
 async def get_user_collection (db: AsyncIOMotorDatabase = Depends(get_async_db)):
-    return db["users"]
+    return db["fa_users"]
 
 # Fetch user data from database
 async def get_user(identifier: str, collection: AsyncIOMotorCollection = Depends(get_user_collection)):

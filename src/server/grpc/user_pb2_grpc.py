@@ -38,7 +38,7 @@ class UserServicesStub(object):
         self.UserDetail = channel.unary_unary(
                 '/src.server.proto.user.UserServices/UserDetail',
                 request_serializer=user__pb2.UserRequest.SerializeToString,
-                response_deserializer=user__pb2.UserBase.FromString,
+                response_deserializer=user__pb2.UserResponse.FromString,
                 _registered_method=True)
         self.UserList = channel.unary_unary(
                 '/src.server.proto.user.UserServices/UserList',
@@ -48,12 +48,12 @@ class UserServicesStub(object):
         self.UserSignIn = channel.unary_unary(
                 '/src.server.proto.user.UserServices/UserSignIn',
                 request_serializer=user__pb2.UserSignInRequest.SerializeToString,
-                response_deserializer=user__pb2.UserBase.FromString,
+                response_deserializer=user__pb2.UserResponse.FromString,
                 _registered_method=True)
         self.UserSignUp = channel.unary_unary(
                 '/src.server.proto.user.UserServices/UserSignUp',
                 request_serializer=user__pb2.UserSignUpRequest.SerializeToString,
-                response_deserializer=user__pb2.UserBase.FromString,
+                response_deserializer=user__pb2.UserResponse.FromString,
                 _registered_method=True)
         self.UserSearch = channel.unary_unary(
                 '/src.server.proto.user.UserServices/UserSearch',
@@ -123,7 +123,7 @@ def add_UserServicesServicer_to_server(servicer, server):
             'UserDetail': grpc.unary_unary_rpc_method_handler(
                     servicer.UserDetail,
                     request_deserializer=user__pb2.UserRequest.FromString,
-                    response_serializer=user__pb2.UserBase.SerializeToString,
+                    response_serializer=user__pb2.UserResponse.SerializeToString,
             ),
             'UserList': grpc.unary_unary_rpc_method_handler(
                     servicer.UserList,
@@ -133,12 +133,12 @@ def add_UserServicesServicer_to_server(servicer, server):
             'UserSignIn': grpc.unary_unary_rpc_method_handler(
                     servicer.UserSignIn,
                     request_deserializer=user__pb2.UserSignInRequest.FromString,
-                    response_serializer=user__pb2.UserBase.SerializeToString,
+                    response_serializer=user__pb2.UserResponse.SerializeToString,
             ),
             'UserSignUp': grpc.unary_unary_rpc_method_handler(
                     servicer.UserSignUp,
                     request_deserializer=user__pb2.UserSignUpRequest.FromString,
-                    response_serializer=user__pb2.UserBase.SerializeToString,
+                    response_serializer=user__pb2.UserResponse.SerializeToString,
             ),
             'UserSearch': grpc.unary_unary_rpc_method_handler(
                     servicer.UserSearch,
@@ -182,7 +182,7 @@ class UserServices(object):
             target,
             '/src.server.proto.user.UserServices/UserDetail',
             user__pb2.UserRequest.SerializeToString,
-            user__pb2.UserBase.FromString,
+            user__pb2.UserResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -236,7 +236,7 @@ class UserServices(object):
             target,
             '/src.server.proto.user.UserServices/UserSignIn',
             user__pb2.UserSignInRequest.SerializeToString,
-            user__pb2.UserBase.FromString,
+            user__pb2.UserResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -263,7 +263,7 @@ class UserServices(object):
             target,
             '/src.server.proto.user.UserServices/UserSignUp',
             user__pb2.UserSignUpRequest.SerializeToString,
-            user__pb2.UserBase.FromString,
+            user__pb2.UserResponse.FromString,
             options,
             channel_credentials,
             insecure,

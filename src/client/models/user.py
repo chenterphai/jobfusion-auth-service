@@ -21,14 +21,41 @@ class UserModel(BaseModel):
     lastname: Optional[str] = Field(None)
     created_at: datetime = Field(default=datetime.now(timezone.utc))
     updated_at: datetime = Field(default=datetime.now(timezone.utc))
-    token: str = Field(...)
+    token: Optional[str] = Field(None)
 
     model_config = ConfigDict(
         populate_by_name=True,
         arbitrary_types_allowed=True,
-        json_schema_extra={
-            "example": {
-                "username": "chenterphai"
-            }
-        }
+        # json_schema_extra={
+        #     "example": {
+        #         "username": "chenterphai",
+        #         "ip_address": "192.168.1.5",
+        #         "url":"https://chenterphai.jobfusion.com",
+        #         "provider": ["email"],
+        #         "email": "chenterphai61@gmail.com",
+        #         "password": "123456"
+        #     }
+        # }
+    )
+
+class UserResponse(BaseModel):
+
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    username: str = Field(...)
+    email: Optional[EmailStr] = Field(None)
+    phone: Optional[str] = Field(None)
+    ip_address: str = Field(...)
+    url: str = Field(...)
+    provider: List[str] = Field(...)
+    is_verified: int = Field(default=0)
+    avatar: Optional[str] = Field(None)
+    firstname: Optional[str] = Field(None)
+    lastname: Optional[str] = Field(None)
+    created_at: datetime = Field(default=datetime.now(timezone.utc))
+    updated_at: datetime = Field(default=datetime.now(timezone.utc))
+    token: Optional[str] = Field(None)
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True
     )
