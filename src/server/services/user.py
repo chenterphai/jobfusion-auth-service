@@ -1,17 +1,17 @@
 from datetime import datetime, timedelta, timezone
 from bson import ObjectId
 from grpc import ServicerContext
-from google.protobuf.empty_pb2 import Empty
 import logging
 
-import grpc
+from pymongo import ReturnDocument
 
-from src.client.models.user import UserModel
+from src.client.models.user import UserModel, UserUpdateRequest
 from src.config.settings import settings
 from src.server.grpc import user_pb2, user_pb2_grpc
 from src.config.database import db_instance, connect_to_mongo
+from src.utils import clean_data
 from src.utils.serial import serial_doc
-from src.utils.jwt import authenticate_user, create_jwt_token
+from src.utils.jwt import authenticate_user, create_jwt_token, get_current_user
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
         try:
             collection = db_instance.db.get_collection("fa_users")
 
-            user = await collection.find_one({"token": ObjectId(request.token)})
+            user = await get_current_user(token=request.token, collection=collection)
 
             if user:
                 serialized_user = serial_doc(user)
@@ -48,13 +48,22 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
                     token = serialized_user["token"]
                 )
 
-                return user_data
+                return user_pb2.UserResponse(
+                    code = 0,
+                    message = "Successfully",
+                    user = user_data
+                )
             
-            return context.abort(code=grpc.StatusCode.NOT_FOUND, details="User not found!")
+            return user_pb2.UserResponse(
+                code = 1,
+                message = "Not Found."
+            )
 
         except Exception as e:
-            logger.info(f"User Detail Error: {e}")
-            return Empty
+            return user_pb2.UserResponse(
+                code = 0,
+                message = f"Exception: {e}"
+            )
         
 
     async def UserSignIn(self, request: user_pb2.UserSignInRequest, context: ServicerContext):
@@ -88,7 +97,7 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
                         "$set": {
                             "last_login": datetime.now(timezone.utc),
                             # "ip_address": params.client.host,
-                            "access_token": access_token,
+                            "token": access_token,
                         }
                     },
                 )
@@ -214,6 +223,59 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
 
 
         except Exception as e:
+            return user_pb2.UserResponse(
+                code = 1,
+                message = f"Something went wrong: {e}"
+            )
+        
+
+
+    async def UserUpdate(self, request: user_pb2.UserUpdateRequest, context: ServicerContext):
+        if db_instance.db is None:
+            await connect_to_mongo()
+
+        try:
+
+            collection = db_instance.db.get_collection("fa_users")
+
+            request_data = UserUpdateRequest(
+                avatar=request.avatar,
+                email=request.email,
+                firstname=request.firstname,
+                ip_address=request.ip_address,
+                is_verified=request.is_verified,
+                lastname=request.lastname,
+                phone=request.phone,
+                provider=request.provider,
+                updated_at=request.updated_at,
+                url=request.url,
+                username=request.username,
+                token=request.token
+            ).model_dump(by_alias=True, exclude_none=True)
+
+            data = clean_data.clean_data_recursively(request_data)
+
+
+            if (request.token) is not None :
+                update_result = await collection.find_one_and_update(
+                    {"token": request.token},
+                    {"$set": data},
+                    return_document=ReturnDocument.AFTER
+                )
+
+                if update_result is not None:
+                    return user_pb2.UserResponse(
+                        code = 0,
+                        message="Successfully updated profile.",
+                    )
+                else:
+                    return user_pb2.UserResponse(
+                        code = 1,
+                        message = "Unfortunately, failed to update."
+                    )
+
+        except Exception as e:
+            logger.info(e)
             return user_pb2.UserResponse(
                 code = 1,
                 message = f"Something went wrong: {e}"

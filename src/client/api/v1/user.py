@@ -1,11 +1,11 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Body, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 import grpc
 from google.protobuf.json_format import MessageToDict, ParseDict
 
-from src.client.models.user import UserLoginRequest, UserModel, UserResponse
+from src.client.models.user import UserDetailRequest, UserLoginRequest, UserModel, UserResponse, UserUpdateRequest
 from src.config.settings import settings
 from src.utils.jwt import create_jwt_token, get_hashed_password
 from src.utils.response import ResponseModel, Result, Status
@@ -166,6 +166,107 @@ async def signin(form_data: UserLoginRequest = Body(...)):
                         status="success"
                     ),
                     result=Result(data=UserResponse(**user_dict.get("user")) if user_dict.get("code", 0) == 0 else None)
+                ))
+            )
+
+        except Exception as e:
+            return JSONResponse(
+                content=jsonable_encoder(ResponseModel(
+                    status=Status(
+                        code=1,
+                        msg=f"Exception: {e}",
+                        status="fail"
+                    ),
+                    result=Result(data=None)
+                ))
+            )
+        
+@router.post(
+    "/me",
+    response_model_by_alias=False,
+    status_code=status.HTTP_200_OK
+)
+async def profile(form_data: UserDetailRequest = Body(...)):
+    async with grpc.aio.insecure_channel("localhost:50051") as channel:
+        stub = user_pb2_grpc.UserServicesStub(channel)
+
+        try:
+            request_data = {
+                "token": form_data.token
+            }
+
+            request_message = ParseDict(request_data, user_pb2.UserRequest())
+
+            response = await stub.UserDetail(request_message)
+
+            user_dict = MessageToDict(response, preserving_proto_field_name=True)
+
+            return JSONResponse(
+                content=jsonable_encoder(ResponseModel(
+                    status=Status(
+                        code=0,
+                        msg="Successfully",
+                        status="success"
+                    ),
+                    result=Result(data=UserResponse(**user_dict.get("user")) if user_dict.get("code", 0) == 0 else None)
+                ))
+            )
+
+        except Exception as e:
+            return JSONResponse(
+                content=jsonable_encoder(ResponseModel(
+                    status=Status(
+                        code=1,
+                        msg=f"Exception: {e}",
+                        status="fail"
+                    ),
+                    result=Result(data=None)
+                ))
+            )
+        
+@router.post("/profile", response_model_by_alias=False, status_code=status.HTTP_200_OK)
+async def update(form_data: UserUpdateRequest = Body(...)):
+    async with grpc.aio.insecure_channel("localhost:50051") as channel:
+        stub = user_pb2_grpc.UserServicesStub(channel)
+
+        try:
+
+            require_field = {
+                "token": form_data.token,
+                "updated_at": str(datetime.now(timezone.utc))
+            }
+
+            optional = {
+                "username": form_data.username,
+                "firstname": form_data.firstname,
+                "lastname": form_data.lastname,
+                "email": form_data.email,
+                "phone": form_data.phone,
+                "avatar": form_data.avatar,
+                "ip_address": form_data.ip_address,
+                "url": form_data.url,
+                "provider": form_data.provider,
+                "is_verified": form_data.is_verified
+            }
+            for key, value in optional.items():
+                if value not in (None, ""):
+                    require_field[key] = value
+
+
+            request_message = ParseDict(require_field, user_pb2.UserUpdateRequest())
+
+            response = await stub.UserUpdate(request_message)
+
+            dict = MessageToDict(response, preserving_proto_field_name=True)
+
+            return JSONResponse(
+                content=jsonable_encoder(ResponseModel(
+                    status=Status(
+                        code=0,
+                        msg=dict.get("username"),
+                        status="success"
+                    ),
+                    result=Result(data=None)
                 ))
             )
 

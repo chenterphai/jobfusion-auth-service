@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from typing import List, Optional
+from bson import ObjectId
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from src.config.database import PyObjectId
@@ -41,6 +42,27 @@ class UserModel(BaseModel):
 class UserLoginRequest(BaseModel):
     identifier: str = Field(...)
     password: str = Field(...)
+
+class UserDetailRequest(BaseModel):
+    token: str = Field(...)
+
+class UserUpdateRequest(BaseModel):
+    username: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    ip_address: Optional[str] = None
+    url: Optional[str] = None
+    provider: Optional[List[str]] = None
+    is_verified: Optional[int] = None
+    avatar: Optional[str] = None
+    firstname: Optional[str] = None
+    lastname: Optional[str] = None
+    token: str
+    updated_at: datetime = Field(default=datetime.now(timezone.utc))
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders={ObjectId: str}
+    )
 
 class UserResponse(BaseModel):
 
