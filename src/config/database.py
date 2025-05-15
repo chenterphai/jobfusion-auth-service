@@ -14,7 +14,7 @@ class Database:
 db_instance = Database()
 
 async def connect_to_mongo():
-    db_instance.client = AsyncIOMotorClient("mongodb+srv://chenter404:c3Futureapps@zynx-auth.yxarrsu.mongodb.net/?retryWrites=true&w=majority&appName=zynx-auth")
+    db_instance.client = AsyncIOMotorClient("mongodb://localhost:27017")
     db_instance.db = db_instance.client[settings.MONGODB_DATABASE]
     logger.info(" ✅ Connected to MongoDB")
 
