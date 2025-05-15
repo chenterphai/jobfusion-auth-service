@@ -1,4 +1,4 @@
-#!/home/chen/INTELLINEX/backend-devops/jobfusion/jobfusion-auth-service/.venv/bin/python3
+#!/Users/chenterphai/INTELLINEX/backend-devops/FastAPI/jobfusion-server/auth-server/.venv/bin/python3.13
 # -*- coding: utf-8 -*-
 import re
 import sys

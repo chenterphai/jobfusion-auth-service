@@ -253,7 +253,7 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
                 is_verified=request.is_verified,
                 lastname=request.lastname,
                 phone=request.phone,
-                provider=request.provider,
+                provider=list(request.provider),
                 updated_at=request.updated_at,
                 url=request.url,
                 username=request.username,

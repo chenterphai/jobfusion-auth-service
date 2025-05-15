@@ -66,7 +66,7 @@ class UserUpdateRequest(BaseModel):
 
 class UserResponse(BaseModel):
 
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    id: Optional[PyObjectId] = Field(alias="id", default=None)
     username: str = Field(...)
     email: Optional[EmailStr] = Field(None)
     phone: Optional[str] = Field(None)

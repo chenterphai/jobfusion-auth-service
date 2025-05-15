@@ -249,7 +249,10 @@ async def update(form_data: UserUpdateRequest = Body(...)):
                 "is_verified": form_data.is_verified
             }
             for key, value in optional.items():
-                if value not in (None, ""):
+                if isinstance(value, list):
+                    if value:
+                        require_field[key] = value
+                elif value not in (None, ""):
                     require_field[key] = value
 
 
