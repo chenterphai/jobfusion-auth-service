@@ -235,9 +235,16 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
             await connect_to_mongo()
 
         try:
-
             collection = db_instance.db.get_collection("fa_users")
 
+            # Validate presence of token
+            if not request.token:
+                return user_pb2.UserResponse(
+                    code=1,
+                    message="Token is required for update."
+                )
+
+            # Prepare update data
             request_data = UserUpdateRequest(
                 avatar=request.avatar,
                 email=request.email,
@@ -253,30 +260,31 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
                 token=request.token
             ).model_dump(by_alias=True, exclude_none=True)
 
+            # Clean data recursively
             data = clean_data.clean_data_recursively(request_data)
 
+            # Perform update
+            update_result = await collection.find_one_and_update(
+                {"token": request.token},
+                {"$set": data},
+                return_document=ReturnDocument.AFTER
+            )
 
-            if (request.token) is not None :
-                update_result = await collection.find_one_and_update(
-                    {"token": request.token},
-                    {"$set": data},
-                    return_document=ReturnDocument.AFTER
+            # If update fails or user not found
+            if not update_result:
+                return user_pb2.UserResponse(
+                    code=1,
+                    message="User not found or update failed."
                 )
 
-                if update_result is not None:
-                    return user_pb2.UserResponse(
-                        code = 0,
-                        message="Successfully updated profile.",
-                    )
-                else:
-                    return user_pb2.UserResponse(
-                        code = 1,
-                        message = "Unfortunately, failed to update."
-                    )
+            return user_pb2.UserResponse(
+                code=0,
+                message="Successfully updated profile."
+            )
 
         except Exception as e:
-            logger.info(e)
+            logger.error(f"Error in UserUpdate: {e}")
             return user_pb2.UserResponse(
-                code = 1,
-                message = f"Something went wrong: {e}"
+                code=1,
+                message="Something went wrong, please try again later."
             )
