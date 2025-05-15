@@ -2,7 +2,6 @@ from datetime import datetime, timedelta, timezone
 from bson import ObjectId
 from grpc import ServicerContext
 from google.protobuf.empty_pb2 import Empty
-from fastapi import Request
 import logging
 
 import grpc
@@ -58,7 +57,7 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
             return Empty
         
 
-    async def UserSignIn(self, request: user_pb2.UserSignInRequest, params: Request, context: ServicerContext):
+    async def UserSignIn(self, request: user_pb2.UserSignInRequest, context: ServicerContext):
         if db_instance.db is None:
             await connect_to_mongo()
 
@@ -88,7 +87,7 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
                     {
                         "$set": {
                             "last_login": datetime.now(timezone.utc),
-                            "ip_address": params.client.host,
+                            # "ip_address": params.client.host,
                             "access_token": access_token,
                         }
                     },
@@ -111,13 +110,23 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
                     token = serialized_user["token"]
                 )
 
-                return user_data
-            return context.abort(code=grpc.StatusCode.NOT_FOUND, details="Unsuccessfully Authenticated!")
+                return user_pb2.UserResponse(
+                    code=0,
+                    message="Successfully login.",
+                    user=user_data
+                )
+            
+            return user_pb2.UserResponse(
+                code=1,
+                message="Unsuccessfully Authenticated!"
+            )
 
             
         except Exception as e:
-            logger.error(f"Something went wrong: {e}")
-            return context.abort(code=grpc.StatusCode.INTERNAL, details=f"Something went wrong with: {e}")
+            return user_pb2.UserResponse(
+                code=1,
+                message=f"Something went wrong: {e}"
+            )
         
         
     async def UserSignUp(self, request: user_pb2.UserSignUpRequest, context: ServicerContext):

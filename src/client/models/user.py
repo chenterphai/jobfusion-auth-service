@@ -38,6 +38,10 @@ class UserModel(BaseModel):
         # }
     )
 
+class UserLoginRequest(BaseModel):
+    identifier: str = Field(...)
+    password: str = Field(...)
+
 class UserResponse(BaseModel):
 
     id: Optional[PyObjectId] = Field(alias="_id", default=None)

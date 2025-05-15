@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 import grpc
 from google.protobuf.json_format import MessageToDict, ParseDict
 
-from src.client.models.user import UserModel, UserResponse
+from src.client.models.user import UserLoginRequest, UserModel, UserResponse
 from src.config.settings import settings
 from src.utils.jwt import create_jwt_token, get_hashed_password
 from src.utils.response import ResponseModel, Result, Status
@@ -15,7 +15,7 @@ router = APIRouter()
 
 
 @router.post(
-        "/",
+        "/sign-up",
         response_description="Sign Up",
         status_code=status.HTTP_201_CREATED,
         response_model_by_alias=False
@@ -134,3 +134,49 @@ async def signup(user: UserModel = Body(...)):
                     )),
                     status_code=status.HTTP_200_OK
                 )
+        
+@router.post(
+    "/sign-in",
+    status_code=status.HTTP_200_OK,
+    response_description="User Login via Identifier / Password",
+    response_model_by_alias=False
+)
+async def signin(form_data: UserLoginRequest = Body(...)):
+    async with grpc.aio.insecure_channel("localhost:50051") as channel:
+        stub = user_pb2_grpc.UserServicesStub(channel)
+
+        try:
+
+            request_data = {
+                "identifier": form_data.identifier,
+                "password": form_data.password
+            }
+
+            request_message = ParseDict(request_data, user_pb2.UserSignInRequest())
+
+            response = await stub.UserSignIn(request_message)
+
+            user_dict = MessageToDict(response, preserving_proto_field_name=True)
+
+            return JSONResponse(
+                content=jsonable_encoder(ResponseModel(
+                    status=Status(
+                        code=0,
+                        msg="Successfully logged in.",
+                        status="success"
+                    ),
+                    result=Result(data=UserResponse(**user_dict.get("user")) if user_dict.get("code", 0) == 0 else None)
+                ))
+            )
+
+        except Exception as e:
+            return JSONResponse(
+                content=jsonable_encoder(ResponseModel(
+                    status=Status(
+                        code=1,
+                        msg=f"Exception: {e}",
+                        status="fail"
+                    ),
+                    result=Result(data=None)
+                ))
+            )
