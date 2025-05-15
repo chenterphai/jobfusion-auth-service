@@ -1,0 +1,109 @@
+syntax = "proto3";
+
+package src.server.proto.user;
+
+import "google/protobuf/empty.proto";
+
+
+// User Base Message
+message UserBase {
+    string id = 1;
+    string username = 2;
+    optional string email = 3;
+    optional string phone = 4;
+    string ip_address = 5;
+    string url = 6;
+    repeated string provider = 7;
+    int32 is_verified = 8;
+    optional string avatar = 9;
+    optional string firstname = 10;
+    optional string lastname = 11;
+    string created_at = 12;
+    string updated_at = 13;
+    string token = 14;
+}
+
+// User Message
+message User {
+    string username = 1;
+    optional string password = 2;
+    optional string email = 3;
+    optional string phone = 4;
+    string ip_address = 5;
+    string url = 6;
+    repeated string provider = 7;
+    int32 is_verified = 8;
+    optional string avatar = 9;
+    optional string firstname = 10;
+    optional string lastname = 11;
+    string created_at = 12;
+    string updated_at = 13;
+    string token = 14;
+}
+
+// User Creation Message
+message UserSignUpRequest {
+    string username = 1;
+    optional string password = 2;
+    optional string email = 3;
+    optional string phone = 4;
+    string ip_address = 5;
+    string url = 6;
+    repeated string provider = 7;
+    int32 is_verified = 8;
+    optional string avatar = 9;
+    optional string firstname = 10;
+    optional string lastname = 11;
+    string created_at = 12;
+    string updated_at = 13;
+    string token = 14;
+}
+
+// User Authenticated Request
+message UserRequest {
+    string token = 1;
+}
+
+// User Search Request
+message UserSearchRequest {
+    optional string username = 1;
+    optional string email = 2;
+    optional string phone = 3;
+    optional string firstname = 4;
+    optional string lastname = 5;
+}
+
+message UserSignInRequest {
+    string identifier = 1;
+    string password = 2;
+}
+
+message UserListResponse {
+    repeated UserBase user = 1;
+}
+
+
+message UserUpdateRequest {
+    optional string username = 1;
+    optional string email = 2;
+    optional string phone = 3;
+    optional string ip_address = 4;
+    optional string url = 5;
+    repeated string provider = 6;
+    optional int32 is_verified = 7;
+    optional string avatar = 8;
+    optional string firstname = 9;
+    optional string lastname = 10;
+    string updated_at = 11;
+    string token = 12;
+}
+
+service UserServices {
+    rpc UserDetail (UserRequest) returns (UserBase);
+    rpc UserList (google.protobuf.Empty) returns (UserListResponse);
+    rpc UserSignIn (UserSignInRequest) returns (UserBase);   
+    rpc UserSignUp (UserSignUpRequest) returns (UserBase);
+    rpc UserSearch (UserSearchRequest) returns (UserListResponse);
+    rpc UserUpdate (UserUpdateRequest) returns (UserBase);
+    rpc UserDelete (UserRequest) returns (google.protobuf.Empty);
+}
