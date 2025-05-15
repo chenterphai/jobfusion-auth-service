@@ -116,7 +116,7 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
                     lastname = serialized_user["lastname"],
                     created_at = serialized_user["created_at"],
                     updated_at = serialized_user["updated_at"],
-                    token = serialized_user["token"]
+                    token = access_token
                 )
 
                 return user_pb2.UserResponse(
