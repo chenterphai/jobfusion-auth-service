@@ -26,6 +26,8 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
         try:
             collection = db_instance.db.get_collection("fa_users")
 
+            collection.create_index({"token": 1})
+
             user = await get_current_user(token=request.token, collection=collection)
 
             if user:
@@ -96,7 +98,7 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
                     {
                         "$set": {
                             "last_login": datetime.now(timezone.utc),
-                            # "ip_address": params.client.host,
+                            "ip_address": request.ip_address,
                             "token": access_token,
                         }
                     },
@@ -107,7 +109,7 @@ class UserServices(user_pb2_grpc.UserServicesServicer):
                     username = serialized_user["username"],
                     email = serialized_user["email"],
                     phone = serialized_user["phone"],
-                    ip_address = serialized_user["ip_address"],
+                    ip_address = request.ip_address,
                     url = serialized_user["url"],
                     provider = serialized_user["provider"],
                     is_verified = serialized_user["is_verified"],

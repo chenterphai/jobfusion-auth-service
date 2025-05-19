@@ -80,6 +80,9 @@ async def get_user_collection (db: AsyncIOMotorDatabase = Depends(get_async_db))
 
 # Fetch user data from database
 async def get_user(identifier: str, collection: AsyncIOMotorCollection = Depends(get_user_collection)):
+    collection.create_index({"username": 1})
+    collection.create_index({"email": 1})
+    collection.create_index({"phone": 1})
     user = await collection.find_one({
         "$or": [
             {"username": identifier},

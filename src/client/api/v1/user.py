@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Body, status
+from fastapi import APIRouter, Body, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 import grpc
@@ -141,7 +141,7 @@ async def signup(user: UserModel = Body(...)):
     response_description="User Login via Identifier / Password",
     response_model_by_alias=False
 )
-async def signin(form_data: UserLoginRequest = Body(...)):
+async def signin(request: Request, form_data: UserLoginRequest = Body(...)):
     async with grpc.aio.insecure_channel("localhost:50051") as channel:
         stub = user_pb2_grpc.UserServicesStub(channel)
 
@@ -149,7 +149,8 @@ async def signin(form_data: UserLoginRequest = Body(...)):
 
             request_data = {
                 "identifier": form_data.identifier,
-                "password": form_data.password
+                "password": form_data.password,
+                "ip_address": request.client.host
             }
 
             request_message = ParseDict(request_data, user_pb2.UserSignInRequest())
