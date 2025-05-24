@@ -74,14 +74,42 @@ async def signup(user: UserModel = Body(...)):
                 result=Result(data=None)
             ).model_dump()
         )
-    # Hash password only for email/phone registration
-    hashed_password = get_hashed_password(user.password) if provider in {email_provider, phone_provider} else None
-    
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_jwt_token(data={"sub": user.username}, expires_delta=access_token_expires)
+
+    # validate username
+    if user.username is None or user.username == "":
+        return JSONResponse(
+            content=jsonable_encoder(ResponseModel(
+                status=Status(code=1, msg="Username is required.", status="failed"),
+                result=Result(data=None)
+            )
+        ))
+
+    # validate ip_address
+    if user.ip_address is None or user.ip_address == "":
+        return JSONResponse(
+            content=jsonable_encoder(ResponseModel(
+                status=Status(code=1, msg="IP Address is required.", status="failed"),
+                result=Result(data=None)
+            ))
+        )
+
+    # validate url
+    if user.url is None or user.url == "":
+        return JSONResponse(
+            content=jsonable_encoder(ResponseModel(
+                status=Status(code=1, msg="URL is required.", status="failed"),
+                result=Result(data=None)
+            ))
+        )
 
     async with grpc.aio.insecure_channel("localhost:50051") as channel:
         stub = user_pb2_grpc.UserServicesStub(channel)
+
+        # Hash password only for email/phone registration
+        hashed_password = get_hashed_password(user.password) if provider in {email_provider, phone_provider} else None
+
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_jwt_token(data={"sub": user.username}, expires_delta=access_token_expires)
 
         try:
 
@@ -150,12 +178,25 @@ async def signin(request: Request, form_data: UserLoginRequest = Body(...)):
     async with grpc.aio.insecure_channel("localhost:50051") as channel:
         stub = user_pb2_grpc.UserServicesStub(channel)
 
+        # validate form_data
+        if not form_data.identifier or not form_data.password:
+            return JSONResponse(
+                content=jsonable_encoder(ResponseModel(
+                    status=Status(
+                        code=1,
+                        msg="Identifier and Password are required.",
+                        status="fail"
+                    ),
+                    result=Result(data=None)
+                ))
+            )
+
         try:
 
             request_data = {
                 "identifier": form_data.identifier,
                 "password": form_data.password,
-                "ip_address": "127.0.0.1",
+                "ip_address": request.client.host,
             }
 
             request_message = ParseDict(request_data, user_pb2.UserSignInRequest())
