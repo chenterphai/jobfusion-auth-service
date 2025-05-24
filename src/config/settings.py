@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Settings(BaseSettings):
-    MONGODB_URL: str = os.getenv("MONGODB_URL", "mongodb+srv://chenter404:c3Futureapps@zynx-auth.yxarrsu.mongodb.net/?retryWrites=true&w=majority&appName=zynx-auth")
+    MONGODB_URL: str = os.getenv("MONGODB_URL")
     MONGODB_DATABASE: str = os.getenv("MONGODB_DATABASE", "auth")
     PROJECT_NAME: str = "INTELLINEX SOFT"
     VERSION: str = "1.0.0"

@@ -14,6 +14,11 @@ from src.server.grpc import user_pb2, user_pb2_grpc
 router = APIRouter()
 
 
+@router.post("/check_health")
+async def check_health():
+    return {"status": "ok"}
+
+
 @router.post(
         "/sign-up",
         response_description="Sign Up",
@@ -150,7 +155,7 @@ async def signin(request: Request, form_data: UserLoginRequest = Body(...)):
             request_data = {
                 "identifier": form_data.identifier,
                 "password": form_data.password,
-                "ip_address": request.client.host
+                "ip_address": "127.0.0.1",
             }
 
             request_message = ParseDict(request_data, user_pb2.UserSignInRequest())
@@ -158,6 +163,18 @@ async def signin(request: Request, form_data: UserLoginRequest = Body(...)):
             response = await stub.UserSignIn(request_message)
 
             user_dict = MessageToDict(response, preserving_proto_field_name=True)
+
+            if user_dict.get("code", 0) == 1:
+                return  JSONResponse(
+                    content=jsonable_encoder(ResponseModel(
+                        status=Status(
+                            code=1,
+                            msg="Failed to login. Please check your credentials.",
+                            status="fail"
+                        ),
+                        result=Result(data=None),
+                    ))
+                )
 
             return JSONResponse(
                 content=jsonable_encoder(ResponseModel(
@@ -261,13 +278,13 @@ async def update(form_data: UserUpdateRequest = Body(...)):
 
             response = await stub.UserUpdate(request_message)
 
-            dict = MessageToDict(response, preserving_proto_field_name=True)
+            user_dict = MessageToDict(response, preserving_proto_field_name=True)
 
             return JSONResponse(
                 content=jsonable_encoder(ResponseModel(
                     status=Status(
                         code=0,
-                        msg=dict.get("username"),
+                        msg=user_dict.get("username"),
                         status="success"
                     ),
                     result=Result(data=None)
